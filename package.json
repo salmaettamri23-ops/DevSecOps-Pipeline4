@@ -1,0 +1,11 @@
+{
+  "name": "cicd-jenkins-python",
+  "version": "1.0.0",
+  "scripts": {
+    "install": "python3 -m venv venv && ./venv/bin/pip install -r requirements.txt",
+    "test": "./venv/bin/pytest --cov=app app/test_main.py"
+  },
+  "devDependencies": {
+    "sonar-scanner": "^3.1.0"
+  }
+}
