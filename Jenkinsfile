@@ -52,7 +52,8 @@ pipeline {
                             -v dependency-check-data:/usr/share/dependency-check/data \
                             owasp/dependency-check:latest \
                             --scan /src --format HTML --out /report --project cicd-jenkins \
-                            --nvdApiKey $NVD_API_KEY)
+                            --nvdApiKey $NVD_API_KEY \
+                            --nvdApiDelay 6000)
                         docker cp . $CID:/src
                         docker start -a $CID
                         docker cp $CID:/report/dependency-check-report.html reports/dependency-check/dependency-check-report.html
