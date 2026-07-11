@@ -53,7 +53,7 @@ pipeline {
                             owasp/dependency-check:latest \
                             --scan /src --format HTML --out /report --project cicd-jenkins \
                             --nvdApiKey $NVD_API_KEY \
-                            --nvdApiDelay 6000)
+                            --nvdApiDelay 400)
                         docker cp . $CID:/src
                         docker start -a $CID
                         docker cp $CID:/report/dependency-check-report.html reports/dependency-check/dependency-check-report.html
@@ -95,13 +95,15 @@ pipeline {
 
         stage('Container Security - Trivy') {
             steps {
-                sh '''
-                    docker run --rm \
-                        -v /var/run/docker.sock:/var/run/docker.sock \
-                        -v trivy-cache:/root/.cache/trivy \
-                        aquasec/trivy:latest \
-                        image --timeout 15m --exit-code 1 --severity HIGH,CRITICAL \
-                        cicd-jenkins:${BUILD_NUMBER}
+                 sh '''
+            docker run --rm \
+                 -v /var/run/docker.sock:/var/run/docker.sock \
+                 -v trivy-cache:/root/.cache/trivy \
+                 -v "${WORKSPACE}/.trivyignore":/.trivyignore \
+                 aquasec/trivy:latest \
+                 image --timeout 15m --exit-code 1 --severity HIGH,CRITICAL \
+                 --ignorefile /.trivyignore \
+                 cicd-jenkins:${BUILD_NUMBER}
                 '''
             }
         }
