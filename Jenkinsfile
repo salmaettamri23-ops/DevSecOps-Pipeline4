@@ -79,10 +79,10 @@ pipeline {
         stage('Secret Scanning - TruffleHog') {
             steps {
                 sh '''
-                    docker run --rm \
-                        -v $(pwd):/pwd \
-                        trufflesecurity/trufflehog:latest \
-                        filesystem /pwd --only-verified --fail
+            docker run --rm \
+                -v jenkins_data:/data:ro \
+                trufflesecurity/trufflehog:latest \
+                filesystem /data/workspace/devsecops-pipeline --only-verified --fail
                 '''
             }
         }
@@ -95,16 +95,16 @@ pipeline {
 
         stage('Container Security - Trivy') {
             steps {
-                 sh '''
-            docker run --rm \
-                 -v /var/run/docker.sock:/var/run/docker.sock \
-                 -v trivy-cache:/root/.cache/trivy \
-                 -v "${WORKSPACE}/.trivyignore":/.trivyignore \
-                 aquasec/trivy:latest \
-                 image --timeout 15m --exit-code 1 --severity HIGH,CRITICAL \
-                 --ignorefile /.trivyignore \
-                 cicd-jenkins:${BUILD_NUMBER}
-                '''
+              sh '''
+                docker run --rm \
+                  -v /var/run/docker.sock:/var/run/docker.sock \
+                  -v trivy-cache:/root/.cache/trivy \
+                  -v jenkins_data:/data:ro \
+                  aquasec/trivy:latest \
+                  image --timeout 15m --exit-code 1 --severity HIGH,CRITICAL \
+                  --ignorefile /data/workspace/devsecops-pipeline/.trivyignore \
+                  cicd-jenkins:${BUILD_NUMBER}
+                 '''
             }
         }
 
