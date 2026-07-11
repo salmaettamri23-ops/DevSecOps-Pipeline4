@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_HOST = 'tcp://host.docker.internal:2375'
+    }
+
     triggers {
         // Scruté le dépôt toutes les 2 minutes pour détecter les changements
         pollSCM('H/2 * * * *')
