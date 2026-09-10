@@ -83,7 +83,7 @@ HTML_TEMPLATE = """
 <body>
     <div class="container">
         <div class="header-student">
-            PFE Licence Cybersécurité | Réalisé par : SALMA ETTAMRI
+            PFE Licence Cybersécurité | Réalisé par : SALMA et CYR
         </div>
         <h2>Mon Gestionnaire de Tâches</h2>
         <form action="/add" method="POST">
