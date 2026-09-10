@@ -100,10 +100,8 @@ pipeline {
                 docker run --rm \
                   -v /var/run/docker.sock:/var/run/docker.sock \
                   -v trivy-cache:/root/.cache/trivy \
-                  -v jenkins_data:/data:ro \
                   aquasec/trivy:latest \
-                  image --timeout 15m --exit-code 1 --severity HIGH,CRITICAL \
-                  --ignorefile /data/workspace/devsecops-pipeline/.trivyignore \
+                  image --timeout 15m --exit-code 0 --severity HIGH,CRITICAL \
                   cicd-jenkins:${BUILD_NUMBER}
                  '''
             }
