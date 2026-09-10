@@ -1,5 +1,10 @@
 .venv/
+<<<<<<< HEAD
+__pycache__/
+*.db
+=======
 node_modules/
 package-lock.json
 
 CMD
+>>>>>>> cba67e9c68794b2b2ca055f0b561c666630b8e14

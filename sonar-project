@@ -1,0 +1,11 @@
+sonar.projectKey=mon-projet-devsecops
+sonar.projectName=Mon Projet DevSecOps
+sonar.projectVersion=1.0
+
+# Dossier à analyser
+sonar.sources=.
+
+# Exclusions pour ne pas fausser les résultats
+sonar.exclusions=**/.venv/**, **/test_*.py, **/Jenkinsfile
+
+sonar.sourceEncoding=UTF-8
