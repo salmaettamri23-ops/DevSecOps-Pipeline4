@@ -77,9 +77,6 @@ pipeline {
         DOCKER_HOST = 'tcp://host.docker.internal:2375'
     }
 
-    // triggers {
-    //   pollSCM('H/2 * * * *')
-    // }
 
     stages {
 
