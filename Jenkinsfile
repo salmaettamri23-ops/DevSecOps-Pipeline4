@@ -1,124 +1,43 @@
 pipeline {
     agent any
 
-
-    stages {
-        stage('1. Recuperation du Code') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('2. Scan de Securite du Code (SAST)') {
-            steps {
-                echo 'Lancement du scan de securite avec Bandit...'
-                sh 'pip install bandit || true'
-                sh 'bandit -r app.py || true'
-            }
-        }
-
-        stage('3. Analyse des Dependances (SCA)') {
-            steps {
-                echo 'Analyse du fichier requirements.txt...'
-                sh 'trivy fs --exit-code 0 requirements.txt || true'
-            }
-        }
-
-        stage('4. Construction de l\'image Docker') {
-            steps {
-                echo 'Construction de l\'image de l\'application...'
-                sh 'docker build -t mon-app-sec:latest . || true'
-            }
-        }
-
-        stage('5. Scan de l\'image Docker') {
-            steps {
-                echo 'Analyse des vulnerabilites de l\'image finale...'
-                sh 'trivy image --exit-code 0 mon-app-sec:latest || true'
-            }
-        }
-
-        stage('6. Deploiement Securise') {
-            steps {
-                echo 'Deploiement de l\'application...'
-                sh 'docker rm -f app-securisee || true'
-                sh 'docker run -d --name app-securisee -p 5000:5000 mon-app-sec:latest || true'
-            }
-        }
-
-        stage('7. Analyse Dynamique (DAST)') {
-            steps {
-                echo 'Verification de la disponibilite de l\'application...'
-                // On vérifie simplement que l'application répond bien sur le port 5000
-                sh 'curl -I http://localhost:5000 || true'
-
-                echo 'Lancement d\'un scan de securite des ports...'
-                // On génère un faux rapport pour que Jenkins puisse l'afficher sans planter
-                sh 'echo "<html><body><h1>Rapport de Securite</h1><p>L\'application sur le port 5000 a ete analysee avec succes.</p></body></html>" > rapport_zap.html'
-
-                publishHTML([
-                    allowMissing: true,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: '.',
-                    reportFiles: 'rapport_zap.html',
-                    reportName: 'Rapport Securite OWASP ZAP',
-                    reportTitles: 'Rapport ZAP'
-
-                //
-                ])
-            }
-        }
-    }
-}
-=======
     environment {
-        // CORRECTION WINDOWS : Permet à Jenkins de piloter Docker Desktop sans erreur 'not found'
         DOCKER_HOST = 'tcp://host.docker.internal:2375'
     }
 
+    triggers {
+        // Scruté le dépôt toutes les 2 minutes pour détecter les changements
+        pollSCM('H/2 * * * *')
+    }
 
     stages {
 
         stage('Checkout') {
             steps {
-                // Étape d'origine conservée avec votre lien et votre branche master
-                git branch: 'master',
+                git branch: 'main',
                     credentialsId: 'git-credentials',
-                    url: 'https://github.com/salmaettamri23-ops/DevSecOps-Pipeline3.git'
+                    url: 'https://github.com/salmaettamri23-ops/DevSecOps-Pipeline4.git'
             }
         }
 
         stage('Install') {
             steps {
-                sh '''
-                    python3 -m pip install --user --upgrade pip --break-system-packages || true
-                    if [ -f requirements.txt ]; then
-                        python3 -m pip install --user -r requirements.txt --break-system-packages
-                    fi
-                    python3 -m pip install --user pytest --break-system-packages
-                '''
+                // Déclenche la création du venv et l'installation via package.json
+                sh 'npm install'
             }
         }
 
         stage('Tests') {
             steps {
-                sh '''
-                    python3 -m pytest || echo "Certains tests ont échoué, mais on continue le pipeline"
-                '''
+                // Déclenche pytest via le script npm test
+                sh 'npm test'
             }
         }
 
         stage('SAST - SonarQube') {
             steps {
-                withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-                    sh '''
-                        docker run --rm \
-                            -v "${WORKSPACE}":/usr/src \
-                            sonarsource/sonar-scanner-cli:latest \
-                            -Dsonar.token=$SONAR_TOKEN \
-                            -Dsonar.host.url="http://docker.internal"
-                    '''
+                withSonarQubeEnv('SonarQube') {
+                    sh 'npx sonar-scanner'
                 }
             }
         }
@@ -133,7 +52,8 @@ pipeline {
                             -v dependency-check-data:/usr/share/dependency-check/data \
                             owasp/dependency-check:latest \
                             --scan /src --format HTML --out /report --project cicd-jenkins \
-                            --nvdApiKey $NVD_API_KEY)
+                            --nvdApiKey $NVD_API_KEY \
+                            --nvdApiDelay 400)
                         docker cp . $CID:/src
                         docker start -a $CID
                         docker cp $CID:/report/dependency-check-report.html reports/dependency-check/dependency-check-report.html
@@ -159,28 +79,32 @@ pipeline {
         stage('Secret Scanning - TruffleHog') {
             steps {
                 sh '''
-                    docker run --rm \
-                        -v "${WORKSPACE}":/pwd \
-                        trufflesecurity/trufflehog:latest \
-                        filesystem /pwd --only-verified --fail
+            docker run --rm \
+                -v jenkins_data:/data:ro \
+                trufflesecurity/trufflehog:latest \
+                filesystem /data/workspace/devsecops-pipeline --only-verified --fail
                 '''
             }
         }
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t cicd-jenkins:"${env.BUILD_NUMBER}" .'
+                sh 'docker build -t cicd-jenkins:${BUILD_NUMBER} .'
             }
         }
 
         stage('Container Security - Trivy') {
             steps {
-                sh '''
-                    docker run --rm \
-                        aquasec/trivy:latest \
-                        image --timeout 15m --exit-code 1 --severity HIGH,CRITICAL \
-                        cicd-jenkins:"${env.BUILD_NUMBER}"
-                '''
+              sh '''
+                docker run --rm \
+                  -v /var/run/docker.sock:/var/run/docker.sock \
+                  -v trivy-cache:/root/.cache/trivy \
+                  -v jenkins_data:/data:ro \
+                  aquasec/trivy:latest \
+                  image --timeout 15m --exit-code 1 --severity HIGH,CRITICAL \
+                  --ignorefile /data/workspace/devsecops-pipeline/.trivyignore \
+                  cicd-jenkins:${BUILD_NUMBER}
+                 '''
             }
         }
 
@@ -192,7 +116,7 @@ pipeline {
                     docker run -d \
                         --name cicd-jenkins-staging \
                         --network cicd-network \
-                        cicd-jenkins:"${env.BUILD_NUMBER}"
+                        cicd-jenkins:${BUILD_NUMBER}
                     sleep 5
                 '''
             }
@@ -208,7 +132,7 @@ pipeline {
                         --network cicd-network \
                         -v zap-wrk-temp:/zap/wrk \
                         ghcr.io/zaproxy/zaproxy:stable \
-                        zap-baseline.py -t http://docker.internal -r zap-report.html -I)
+                        zap-baseline.py -t http://cicd-jenkins-staging:3000/health -r zap-report.html -I)
                     docker start -a $CID || true
                     docker cp $CID:/zap/wrk/zap-report.html reports/zap/zap-report.html
                     docker rm $CID
@@ -246,8 +170,8 @@ pipeline {
                     docker run -d \
                         --name cicd-jenkins-prod \
                         --network cicd-network \
-                        -p 8081:5000 \
-                        cicd-jenkins:"${env.BUILD_NUMBER}"
+                        -p 8081:3000 \
+                        cicd-jenkins:${BUILD_NUMBER}
                 '''
             }
         }
@@ -263,4 +187,3 @@ pipeline {
         }
     }
 }
-
