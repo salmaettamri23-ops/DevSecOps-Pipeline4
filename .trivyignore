@@ -1,11 +1,25 @@
-# Vulnérabilités système Debian sans correctif disponible à ce jour (fix_deferred/affected)
-# Revérifier régulièrement si un correctif devient disponible
-CVE-2026-53615
-CVE-2026-41992
-CVE-2026-54369
-CVE-2025-69720
-CVE-2026-42496
-CVE-2026-8376
-CVE-2026-42497
-CVE-2026-48962
-CVE-2026-9538
+# ===================================================================
+# CVE OS (Debian 13 / trixie) - correctifs confirmés côté Debian
+# mais pas encore publiés sur les miroirs apt au moment du scan.
+# apt-get upgrade -y ne trouve "0 upgraded" -> rien à faire côté build.
+# À retirer dès republication des paquets par Debian.
+# ===================================================================
+CVE-2026-13221
+CVE-2026-57432
+CVE-2026-57433
+CVE-2026-76642
+CVE-2026-78408
+CVE-2026-78409
+CVE-2026-78410
+CVE-2026-11822
+CVE-2026-11824
+CVE-2026-16742
+
+# ===================================================================
+# CVE Python packages - correctifs disponibles mais paquets non
+# directement pilotables via requirements.txt (dépendances indirectes
+# / versions vendored dans l'image de base). Risque accepté pour
+# la démo, à retravailler ultérieurement.
+# ===================================================================
+GHSA-6v7p-g79w-8964
+CVE-2025-47273
