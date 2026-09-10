@@ -82,9 +82,15 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
+          stage('Docker Build') {
             steps {
                 sh 'docker build --pull --no-cache --provenance=false --sbom=false -t cicd-jenkins:${BUILD_NUMBER} .'
+            }
+        }
+
+        stage('Debug - Verify trivyignore') {
+            steps {
+                sh 'docker run --rm -v jenkins_data:/data:ro busybox cat /data/workspace/devsecops-pipeline/.trivyignore'
             }
         }
 
