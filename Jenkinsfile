@@ -5,11 +5,6 @@ pipeline {
         DOCKER_HOST = 'tcp://host.docker.internal:2375'
     }
 
-    triggers {
-        // Scruté le dépôt toutes les 2 minutes pour détecter les changements
-        pollSCM('H/2 * * * *')
-    }
-
     stages {
 
         stage('Checkout') {
@@ -89,7 +84,7 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t cicd-jenkins:${BUILD_NUMBER} .'
+                sh 'docker build --no-cache -t cicd-jenkins:${BUILD_NUMBER} .'
             }
         }
 
