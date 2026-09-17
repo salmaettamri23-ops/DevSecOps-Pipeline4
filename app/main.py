@@ -17,6 +17,13 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-moi-avant-la-pro
 csrf = CSRFProtect(app)
 
 # =========================================================================
+# CORRECTION SonarQube : "Define a constant instead of duplicating this
+# literal '\'self\'' 5 times." -> la valeur CSP 'self' était répétée
+# 5 fois dans le dictionnaire content_security_policy ci-dessous.
+# =========================================================================
+CSP_SELF = "'self'"
+
+# =========================================================================
 # CORRECTION ZAP : en-têtes de sécurité HTTP manquants
 # Flask-Talisman ajoute automatiquement :
 #   - Content-Security-Policy (CSP)      -> corrige "CSP Header Not Set"
@@ -39,12 +46,12 @@ Talisman(
     frame_options='SAMEORIGIN',
     x_content_type_options=True,
     content_security_policy={
-        'default-src': "'self'",
-        'style-src': "'self'",
+        'default-src': CSP_SELF,
+        'style-src': CSP_SELF,
         'object-src': "'none'",
-        'base-uri': "'self'",
-        'frame-ancestors': "'self'",
-        'form-action': "'self'",
+        'base-uri': CSP_SELF,
+        'frame-ancestors': CSP_SELF,
+        'form-action': CSP_SELF,
     },
     content_security_policy_nonce_in=['style-src'],
 )
