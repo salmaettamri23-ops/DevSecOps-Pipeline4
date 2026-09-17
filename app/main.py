@@ -24,6 +24,14 @@ csrf = CSRFProtect(app)
 #   - X-Content-Type-Options: nosniff    -> corrige "X-Content-Type-Options Header Missing"
 # force_https=False car l'app tourne en HTTP en environnement de staging/démo.
 # A mettre à True en production réelle avec un certificat TLS.
+#
+# CORRECTION ZAP (Medium) : "CSP: Failure to Define Directive with No
+# Fallback" -> ajout explicite de object-src, base-uri, frame-ancestors
+# et form-action, qui ne béneficient pas du fallback default-src.
+#
+# CORRECTION ZAP (Medium) : "CSP: style-src unsafe-inline" -> suppression
+# de 'unsafe-inline' sur style-src, remplacé par un nonce généré à chaque
+# requête via content_security_policy_nonce_in.
 # =========================================================================
 Talisman(
     app,
@@ -32,8 +40,13 @@ Talisman(
     x_content_type_options=True,
     content_security_policy={
         'default-src': "'self'",
-        'style-src': "'self' 'unsafe-inline'",
+        'style-src': "'self'",
+        'object-src': "'none'",
+        'base-uri': "'self'",
+        'frame-ancestors': "'self'",
+        'form-action': "'self'",
     },
+    content_security_policy_nonce_in=['style-src'],
 )
 
 # =========================================================================
@@ -59,12 +72,14 @@ def init_db():
 
 
 # --- DESIGN DE L'INTERFACE (HTML/CSS) ---
+# CORRECTION : ajout de nonce="{{ csp_nonce() }}" sur la balise <style>
+# pour autoriser ce bloc CSS précis sans avoir besoin de 'unsafe-inline'.
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
 <head>
     <title>PFE - Gestionnaire de Tâches SecOps</title>
-    <style>
+    <style nonce="{{ csp_nonce() }}">
         body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 40px; }
         .container { max-width: 600px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); margin: auto; }
         .header-student { background-color: #007bff; color: white; padding: 10px; border-radius: 4px; text-align: center; margin-bottom: 20px; font-weight: bold; }
